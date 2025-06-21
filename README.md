@@ -60,6 +60,14 @@ A RESTful API for managing books and borrow records in a library, built with **E
 
 ---
 
+## Live Production
+
+You can access the live version of the Library Management API here:
+
+[https://programming-hero-level2-b5-a3-assignment-bosk1u32d.vercel.app/api/](https://programming-hero-level2-b5-a3-assignment-bosk1u32d.vercel.app/api/)
+
+---
+
 ## Request/Response Examples
 
 ### Create Book

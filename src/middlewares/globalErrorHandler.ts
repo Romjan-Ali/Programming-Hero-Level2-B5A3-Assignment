@@ -17,7 +17,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     error
   })
 
-  return // Make sure function ends with `void`
+  return 
 }
 
 export default globalErrorHandler

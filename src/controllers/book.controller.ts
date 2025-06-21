@@ -1,5 +1,4 @@
 import { Request, Response } from 'express'
-import mongoose from 'mongoose';
 import Book from '../models/book.model'
 import { 
     createBookZodSchema, 
@@ -8,7 +7,7 @@ import {
     updateBookZodSchema 
 } from '../validations/book.validation'
 
-export const getAllBooks = async (req: Request, res: Response): Promise<Response> => {
+export const getAllBooks = async (req: Request, res: Response): Promise<any> => {
   try {
     const parsedQuery = getAllBooksQuerySchema.safeParse(req.query)
 
@@ -50,7 +49,7 @@ export const getAllBooks = async (req: Request, res: Response): Promise<Response
   }
 }
 
-export const getBookByUserIdParam = async (req: Request, res: Response): Promise<Response> => {
+export const getBookByUserIdParam = async (req: Request, res: Response): Promise<any> => {
   try {
     // Validate params using Zod
     const parsedParams = getBookByIdZodSchema.safeParse(req.params)
@@ -125,7 +124,7 @@ export const createBook = async (req: Request, res: Response): Promise<any> => {
     }
 }
 
-export const bookUpdateById = async (req: Request, res: Response): Promise<Response> => {
+export const bookUpdateById = async (req: Request, res: Response): Promise<any> => {
   try {
     // Validate the bookId param
     const parsedParams = getBookByIdZodSchema.safeParse(req.params)

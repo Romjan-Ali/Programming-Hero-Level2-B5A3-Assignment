@@ -1,4 +1,3 @@
-import { Request, Response } from 'express'
 import { Server } from 'http'
 import dotenv from 'dotenv'
 import app from './app'
@@ -7,10 +6,6 @@ import mongoose from 'mongoose'
 dotenv.config()
 
 let server: Server;
-
-app.get('/', (req: Request, res: Response) => {
-    res.status(200).send(`Welcome to Library Management API`)
-})
 
 const main = async () => {
     await mongoose.connect(process.env.DATABASE_LINK as string)
@@ -26,5 +21,3 @@ const main = async () => {
 }
 
 main()
-
-export default app
