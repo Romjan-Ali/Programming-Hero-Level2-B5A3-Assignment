@@ -6,10 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const book_routes_1 = __importDefault(require("./routes/book.routes"));
 const borrow_routes_1 = __importDefault(require("./routes/borrow.routes"));
+const globalErrorHandler_1 = __importDefault(require("./middlewares/globalErrorHandler"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use('/api/books', book_routes_1.default);
 app.use('/api/borrow', borrow_routes_1.default);
+app.use(globalErrorHandler_1.default);
 app.get('/api', (req, res) => {
     res.status(200).send(`Welcome to Library Management API`);
 });

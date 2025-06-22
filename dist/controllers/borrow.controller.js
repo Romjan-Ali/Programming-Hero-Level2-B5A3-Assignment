@@ -13,36 +13,27 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.borrowedBooks = exports.borrowBook = void 0;
-const book_model_1 = __importDefault(require("../models/book.model"));
 const borrow_model_1 = __importDefault(require("../models/borrow.model"));
-const borrowBook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const borrow_validation_1 = require("../validations/borrow.validation");
+// Borrow a book
+const borrowBook = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { book, quantity, dueDate } = req.body;
+        const parsed = borrow_validation_1.borrowBookZodSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                error: parsed.error.flatten()
+            });
+        }
+        const { book, quantity, dueDate } = parsed.data;
         if (!book || !quantity || !dueDate) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid input, please send book, quantity and dueDate'
+                message: 'Invalid input, please send book, quantity and dueDate',
+                error: req.body.error.flatten()
             });
         }
-        const existsBook = yield book_model_1.default.findById(book);
-        if (!existsBook) {
-            return res.status(404).json({
-                success: false,
-                message: 'Book does not exist'
-            });
-        }
-        if (existsBook.copies < quantity) {
-            return res.status(400).json({
-                success: false,
-                message: 'Requested quantity not available'
-            });
-        }
-        // Update using id
-        yield book_model_1.default.findByIdAndUpdate(book, {
-            $inc: { copies: -quantity },
-            $set: { available: existsBook.copies - quantity === 0 }
-        }, { new: true } // Return updated document
-        );
         // Create borrow record
         const newBorrow = yield borrow_model_1.default.create({
             book,
@@ -56,6 +47,7 @@ const borrowBook = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
     catch (err) {
+        next(err);
         return res.status(500).json({
             success: false,
             message: 'Error borrowing a book'
@@ -63,7 +55,8 @@ const borrowBook = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.borrowBook = borrowBook;
-const borrowedBooks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// Borrowed books summary (Using Aggregation)
+const borrowedBooks = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const borrowedBooks = yield borrow_model_1.default.aggregate([
             {
@@ -105,6 +98,7 @@ const borrowedBooks = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
     }
     catch (err) {
+        next(err);
         return res.status(500).json({
             success: false,
             message: 'Error getting borrowed books summary'

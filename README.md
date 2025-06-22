@@ -260,4 +260,4 @@ This project is licensed under the MIT License.
 
 ## Contact
 
-For any questions or support, contact: [000romjanali@gmail.com]
+For any questions or support, contact: [000romjanali@gmail.com](mailto:000romjanali@gmail.com)

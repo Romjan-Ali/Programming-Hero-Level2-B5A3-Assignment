@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
-const BookSchema = new mongoose_1.Schema({
+const bookSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     author: { type: String, required: true },
     genre: {
@@ -11,14 +11,12 @@ const BookSchema = new mongoose_1.Schema({
     },
     isbn: { type: String, required: true, unique: true },
     description: { type: String },
-    copies: {
-        type: Number,
-        required: true,
-        min: [0, 'Copies must be a non-negative number']
-    },
+    copies: { type: Number, required: true, min: 0 },
     available: { type: Boolean, default: true }
-}, {
-    timestamps: true
-});
-const Book = (0, mongoose_1.model)('Book', BookSchema);
+}, { timestamps: true });
+// Instance method to update availability
+bookSchema.methods.updateAvailability = function () {
+    this.available = this.copies > 0;
+};
+const Book = (0, mongoose_1.model)('Book', bookSchema);
 exports.default = Book;
