@@ -1,12 +1,49 @@
 import { Request, Response } from 'express'
 import Book from '../models/book.model'
-import { 
-    createBookZodSchema, 
-    getAllBooksQuerySchema, 
-    getBookByIdZodSchema, 
-    updateBookZodSchema 
+import {
+  createBookZodSchema,
+  getAllBooksQuerySchema,
+  getBookByIdZodSchema,
+  updateBookZodSchema
 } from '../validations/book.validation'
 
+// Create a book
+export const createBook = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // Validate input using Zod
+    const parsed = createBookZodSchema.safeParse(req.body)
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: 'Validation failed',
+        success: false,
+        error: parsed.error.flatten()
+      })
+    }
+
+    // Create book with validated data
+    const newBook = await Book.create(parsed.data)
+
+    return res.status(201).json({
+      success: true,
+      message: 'Book created successfully',
+      data: newBook
+    })
+  } catch (error: any) {
+    return res.status(500).json({
+      message: 'Error creating a book',
+      success: false,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        ...(error.errors ? { validationErrors: error.errors } : {})
+      }
+    })
+  }
+}
+
+// Get all books
 export const getAllBooks = async (req: Request, res: Response): Promise<any> => {
   try {
     const parsedQuery = getAllBooksQuerySchema.safeParse(req.query)
@@ -49,6 +86,7 @@ export const getAllBooks = async (req: Request, res: Response): Promise<any> => 
   }
 }
 
+// Get book by ID
 export const getBookByUserIdParam = async (req: Request, res: Response): Promise<any> => {
   try {
     // Validate params using Zod
@@ -88,42 +126,7 @@ export const getBookByUserIdParam = async (req: Request, res: Response): Promise
   }
 }
 
-// Create Book
-export const createBook = async (req: Request, res: Response): Promise<any> => {
-    try {
-        // Validate input using Zod
-        const parsed = createBookZodSchema.safeParse(req.body)
-
-        if (!parsed.success) {
-            return res.status(400).json({
-                message: 'Validation failed',
-                success: false,
-                error: parsed.error.flatten()
-            })
-        }
-
-        // Create book with validated data
-        const newBook = await Book.create(parsed.data)
-
-        return res.status(201).json({
-            success: true,
-            message: 'Book created successfully',
-            data: newBook
-        })
-    } catch (error: any) {
-        return res.status(500).json({
-            message: 'Error creating a book',
-            success: false,
-            error: {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-                ...(error.errors ? { validationErrors: error.errors } : {})
-            }
-        })
-    }
-}
-
+// Update book
 export const bookUpdateById = async (req: Request, res: Response): Promise<any> => {
   try {
     // Validate the bookId param
@@ -147,23 +150,30 @@ export const bookUpdateById = async (req: Request, res: Response): Promise<any> 
       })
     }
 
-    const updatedBook = await Book.findByIdAndUpdate(bookId, parsedBody.data, {
-      new: true,
-      runValidators: true
-    })
+    const bookToUpdate = await Book.findById(bookId)
 
-    if (!updatedBook) {
+    if (!bookToUpdate) {
       return res.status(404).json({
         success: false,
-        message: 'Book not found'
+        message: 'Book not found',
       })
     }
+
+    // Apply the incoming update fields
+    Object.assign(bookToUpdate, parsedBody.data)
+
+    // Call the instance method to enforce business logic
+    bookToUpdate.updateAvailability()
+
+    // Save the document with validation
+    const updatedBook = await bookToUpdate.save()
 
     return res.status(200).json({
       success: true,
       message: 'Book updated successfully',
-      data: updatedBook
+      data: updatedBook,
     })
+
   } catch (err: any) {
     return res.status(500).json({
       success: false,
@@ -173,6 +183,7 @@ export const bookUpdateById = async (req: Request, res: Response): Promise<any> 
   }
 }
 
+// Delete book
 export const bookDeleteById = async (req: Request, res: Response): Promise<any> => {
   try {
     // Validate bookId

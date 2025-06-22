@@ -1,7 +1,12 @@
-import { Schema, model } from 'mongoose'
+import { Schema, model, Model, Document } from 'mongoose'
 import IBook from '../interfaces/book.interface'
 
-const BookSchema = new Schema<IBook>(
+// Custom Document type to include methods
+export interface BookDocument extends IBook, Document {
+  updateAvailability(): void
+}
+
+const bookSchema = new Schema<BookDocument>(
   {
     title: { type: String, required: true },
     author: { type: String, required: true },
@@ -12,18 +17,16 @@ const BookSchema = new Schema<IBook>(
     },
     isbn: { type: String, required: true, unique: true },
     description: { type: String },
-    copies: {
-      type: Number,
-      required: true,
-      min: [0, 'Copies must be a non-negative number']
-    },
+    copies: { type: Number, required: true, min: 0 },
     available: { type: Boolean, default: true }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 )
 
-const Book = model<IBook>('Book', BookSchema)
+// Instance method to update availability
+bookSchema.methods.updateAvailability = function () {
+  this.available = this.copies > 0
+}
 
+const Book = model<BookDocument>('Book', bookSchema)
 export default Book

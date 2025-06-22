@@ -1,43 +1,29 @@
-import { Request, Response } from 'express'
-import Book from '../models/book.model'
+import { NextFunction, Request, Response } from 'express'
 import Borrow from '../models/borrow.model'
+import { borrowBookZodSchema } from '../validations/borrow.validation'
 
-export const borrowBook = async (req: Request, res: Response): Promise<any> => {
+// Borrow a book
+export const borrowBook = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {
-        const { book, quantity, dueDate } = req.body
+        const parsed = borrowBookZodSchema.safeParse(req.body)
+
+        if (!parsed.success) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                error: parsed.error.flatten()
+            })
+        }
+
+        const { book, quantity, dueDate } = parsed.data
 
         if (!book || !quantity || !dueDate) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid input, please send book, quantity and dueDate'
+                message: 'Invalid input, please send book, quantity and dueDate',
+                error: req.body.error.flatten()
             })
         }
-
-        const existsBook = await Book.findById(book)
-
-        if (!existsBook) {
-            return res.status(404).json({
-                success: false,
-                message: 'Book does not exist'
-            })
-        }
-
-        if (existsBook.copies < quantity) {
-            return res.status(400).json({
-                success: false,
-                message: 'Requested quantity not available'
-            })
-        }
-
-        // Update using id
-        await Book.findByIdAndUpdate(
-            book,
-            {
-                $inc: { copies: -quantity },
-                $set: { available: existsBook.copies - quantity === 0 }
-            },
-            { new: true } // Return updated document
-        )
 
         // Create borrow record
         const newBorrow = await Borrow.create({
@@ -52,6 +38,7 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
             data: newBorrow
         })
     } catch (err: any) {
+        next(err)
         return res.status(500).json({
             success: false,
             message: 'Error borrowing a book'
@@ -59,7 +46,8 @@ export const borrowBook = async (req: Request, res: Response): Promise<any> => {
     }
 }
 
-export const borrowedBooks = async (req: Request, res: Response): Promise<any> => {
+// Borrowed books summary (Using Aggregation)
+export const borrowedBooks = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {
         const borrowedBooks = await Borrow.aggregate([
             {
@@ -75,9 +63,9 @@ export const borrowedBooks = async (req: Request, res: Response): Promise<any> =
             },
             {
                 $group: {
-                    _id: '$book._id',                    
-                    title: {$first: '$book.title'},
-                    isbn: {$first: '$book.isbn'},
+                    _id: '$book._id',
+                    title: { $first: '$book.title' },
+                    isbn: { $first: '$book.isbn' },
                     totalQuantity: {
                         $sum: '$quantity'
                     }
@@ -92,7 +80,7 @@ export const borrowedBooks = async (req: Request, res: Response): Promise<any> =
                     },
                     totalQuantity: 1
                 }
-            }            
+            }
         ])
         return res.status(200).json({
             success: true,
@@ -100,6 +88,7 @@ export const borrowedBooks = async (req: Request, res: Response): Promise<any> =
             data: borrowedBooks
         })
     } catch (err: any) {
+        next(err)
         return res.status(500).json({
             success: false,
             message: 'Error getting borrowed books summary'
